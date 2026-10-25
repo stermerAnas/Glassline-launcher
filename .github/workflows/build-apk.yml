@@ -124,16 +124,7 @@ jobs:
 
           source = source[:start] + replacement + source[end:]
 
-          old_gesture = """.pointerInput(drawerOpen, settingsOpen) {
-                  var drag = 0f
-                  detectVerticalDragGestures(onVerticalDrag = { _, amount -> drag += amount }, onDragEnd = {
-                      if (!drawerOpen && drag < -55f) drawerOpen = true
-                      if (drawerOpen && drag > 75f) { drawerOpen = false; query = "" }
-                      drag = 0f
-                  })
-              }"""
-
-          replace_once(old_gesture, "", "root swipe handler")
+          
 
           replace_once(
               "import androidx.compose.animation.AnimatedContent\n"
