@@ -32,154 +32,101 @@ jobs:
         run: |
           unzip -oq "GlasslineLauncher-prototype (2).zip" -d build-source
 
-      - name: Optimize launcher source and animations
+      - name: Improve screen animations
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
 
           root = Path("build-source/GlasslineLauncher")
-          path = root / "app/src/main/java/com/glassline/launcher/MainActivity.kt"
+          matches = list(root.rglob("MainActivity.kt"))
 
-          if not path.exists():
-              matches = list(root.rglob("MainActivity.kt"))
-              if len(matches) != 1:
-                  raise SystemExit(
-                      f"Expected one MainActivity.kt, found {matches}"
-                  )
-              path = matches[0]
+          if len(matches) != 1:
+              raise SystemExit(
+                  f"Expected one MainActivity.kt, found {len(matches)}"
+              )
 
+          path = matches[0]
           source = path.read_text(encoding="utf-8")
 
-          def replace_once(old, new, description):
-              global source
-              count = source.count(old)
-              if count != 1:
-                  raise SystemExit(
-                      f"Expected one match for {description}; found {count}. "
-                      "Build stopped rather than applying a partial patch."
+          # Keep app discovery and the LaunchableApp model unchanged.
+          # Add only the animation imports needed by the transition.
+          imports = [
+              "import androidx.compose.animation.fadeIn",
+              "import androidx.compose.animation.fadeOut",
+              "import androidx.compose.animation.scaleIn",
+              "import androidx.compose.animation.slideInVertically",
+              "import androidx.compose.animation.slideOutVertically",
+          ]
+
+          anchor = "import androidx.compose.animation.AnimatedContent\n"
+          if anchor not in source:
+              raise SystemExit("Could not find AnimatedContent import.")
+
+          for item in imports:
+              if item not in source:
+                  source = source.replace(
+                      anchor, anchor + item + "\n", 1
                   )
-              source = source.replace(old, new, 1)
+                  anchor = item + "\n"
 
-          replace_once(
-              "import android.content.Intent\n",
-              "import android.content.ComponentName\nimport android.content.Intent\n",
-              "Android component imports",
+          old = (
+              "transitionSpec = { "
+              "androidx.compose.animation.fadeIn("
+              "tween(160, easing = FastOutSlowInEasing)) "
+              "togetherWith "
+              "androidx.compose.animation.fadeOut(tween(100)) },"
           )
 
-          replace_once(
-              "import java.text.SimpleDateFormat\n",
-              "import kotlinx.coroutines.CancellationException\n"
-              "import kotlinx.coroutines.Dispatchers\n"
-              "import kotlinx.coroutines.withContext\n"
-              "import java.text.SimpleDateFormat\n",
-              "coroutine imports",
-          )
-
-          replace_once(
-              "data class LaunchableApp(val label: String, val packageName: String, val icon: Bitmap)",
-              "data class LaunchableApp(\n"
-              "    val label: String,\n"
-              "    val packageName: String,\n"
-              "    val activityName: String\n"
-              ")",
-              "lazy icon data model",
-          )
-
-          start = source.find("    fun loadApps() {")
-          marker = "    LaunchedEffect(Unit) { loadApps() }"
-          end = source.find(marker, start)
-
-          if start < 0 or end < 0:
-              raise SystemExit("Could not safely locate app discovery code.")
-
-          replacement = """    suspend fun loadApps() {
-              val loadedApps = withContext(Dispatchers.IO) {
-                  val pm = context.packageManager
-                  val intent = Intent(Intent.ACTION_MAIN)
-                      .addCategory(Intent.CATEGORY_LAUNCHER)
-
-                  pm.queryIntentActivities(intent, 0)
-                      .mapNotNull { info ->
-                          val activity = info.activityInfo
-                              ?: return@mapNotNull null
-                          try {
-                              LaunchableApp(
-                                  label = info.loadLabel(pm).toString(),
-                                  packageName = activity.packageName,
-                                  activityName = activity.name
-                              )
-                          } catch (_: Exception) {
-                              null
-                          }
-                      }
-                      .distinctBy { it.packageName }
-                      .sortedBy {
-                          it.label.lowercase(Locale.getDefault())
-                      }
+          new = """transitionSpec = {
+              if (targetState) {
+                  (
+                      slideInVertically(
+                          animationSpec = tween(
+                              300,
+                              easing = FastOutSlowInEasing
+                          ),
+                          initialOffsetY = { height -> height / 3 }
+                      ) +
+                      fadeIn(tween(220)) +
+                      scaleIn(
+                          initialScale = 0.97f,
+                          animationSpec = tween(
+                              300,
+                              easing = FastOutSlowInEasing
+                          )
+                      )
+                  ) togetherWith (
+                      slideOutVertically(
+                          animationSpec = tween(180),
+                          targetOffsetY = { height -> -height / 12 }
+                      ) + fadeOut(tween(150))
+                  )
+              } else {
+                  (
+                      slideInVertically(
+                          animationSpec = tween(250),
+                          initialOffsetY = { height -> -height / 12 }
+                      ) + fadeIn(tween(200))
+                  ) togetherWith (
+                      slideOutVertically(
+                          animationSpec = tween(220),
+                          targetOffsetY = { height -> height / 3 }
+                      ) + fadeOut(tween(170))
+                  )
               }
-              allApps = loadedApps
-          }
-          """
+          },"""
 
-          source = source[:start] + replacement + source[end:]
+          count = source.count(old)
+          if count != 1:
+              raise SystemExit(
+                  f"Expected one original transition, found {count}. "
+                  "No source changes were written."
+              )
 
-          
-
-          replace_once(
-              "import androidx.compose.animation.AnimatedContent\n"
-              "import androidx.compose.animation.core.FastOutSlowInEasing\n"
-              "import androidx.compose.animation.togetherWith\n"
-              "import androidx.compose.animation.core.tween\n",
-              "import androidx.compose.animation.AnimatedContent\n"
-              "import androidx.compose.animation.fadeIn\n"
-              "import androidx.compose.animation.fadeOut\n"
-              "import androidx.compose.animation.scaleIn\n"
-              "import androidx.compose.animation.slideInVertically\n"
-              "import androidx.compose.animation.slideOutVertically\n"
-              "import androidx.compose.animation.core.FastOutSlowInEasing\n"
-              "import androidx.compose.animation.core.tween\n"
-              "import androidx.compose.animation.togetherWith\n",
-              "animation imports",
-          )
-
-          replace_once(
-              "                transitionSpec = { androidx.compose.animation.fadeIn(tween(160, easing = FastOutSlowInEasing)) togetherWith androidx.compose.animation.fadeOut(tween(100)) },",
-              """                transitionSpec = {
-                    if (targetState) {
-                        (slideInVertically(
-                            animationSpec = tween(
-                                310,
-                                easing = FastOutSlowInEasing
-                            ),
-                            initialOffsetY = { height -> height }
-                        ) + fadeIn(tween(220)) + scaleIn(
-                            initialScale = 0.97f,
-                            animationSpec = tween(
-                                310,
-                                easing = FastOutSlowInEasing
-                            )
-                        )) togetherWith
-                            (slideOutVertically(
-                                animationSpec = tween(220),
-                                targetOffsetY = { height -> -height / 12 }
-                            ) + fadeOut(tween(150)))
-                    } else {
-                        (slideInVertically(
-                            animationSpec = tween(280),
-                            initialOffsetY = { height -> -height / 12 }
-                        ) + fadeIn(tween(220))) togetherWith
-                            (slideOutVertically(
-                                animationSpec = tween(240),
-                                targetOffsetY = { height -> height }
-                            ) + fadeOut(tween(180)))
-                    }
-                },""",
-              "screen transition",
-          )
-
+          source = source.replace(old, new, 1)
           path.write_text(source, encoding="utf-8")
-          print("Applied app-discovery and transition changes.")
+          print("Animation patch applied successfully.")
           PY
 
       - name: Build debug APK
