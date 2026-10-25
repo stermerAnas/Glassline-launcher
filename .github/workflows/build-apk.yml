@@ -12,6 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -27,11 +28,101 @@ jobs:
         with:
           gradle-version: "8.11.1"
 
-      - name: Build APK
-        run: gradle -p GlasslineLauncher assembleDebug
+      - name: Extract launcher source
+        run: |
+          unzip -oq "GlasslineLauncher-prototype (2).zip" -d build-source
+
+      - name: Patch app loading
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path(
+              "build-source/GlasslineLauncher/app/src/main/java/"
+              "com/glassline/launcher/MainActivity.kt"
+          )
+
+          if not path.exists():
+              matches = list(
+                  Path("build-source").rglob("MainActivity.kt")
+              )
+              if len(matches) != 1:
+                  raise SystemExit(
+                      f"Expected one MainActivity.kt; found {matches}"
+                  )
+              path = matches[0]
+
+          source = path.read_text(encoding="utf-8")
+
+          start = source.find("    fun loadApps() {")
+          marker = "    LaunchedEffect(Unit) { loadApps() }"
+          end = source.find(marker, start)
+
+          if start < 0 or end < 0:
+              raise SystemExit(
+                  "Patch stopped safely: expected loadApps() function "
+                  "or LaunchedEffect call was not found."
+              )
+
+          imports = (
+              "import kotlinx.coroutines.Dispatchers\n"
+              "import kotlinx.coroutines.withContext\n"
+          )
+
+          if "import kotlinx.coroutines.Dispatchers" not in source:
+              package_end = source.find("\n")
+              source = (
+                  source[:package_end + 1]
+                  + "\n"
+                  + imports
+                  + source[package_end + 1:]
+              )
+
+          start = source.find("    fun loadApps() {")
+          end = source.find(marker, start)
+
+          replacement = """    suspend fun loadApps() {
+              val loadedApps = withContext(Dispatchers.IO) {
+                  val pm = context.packageManager
+                  val intent = Intent(Intent.ACTION_MAIN)
+                      .addCategory(Intent.CATEGORY_LAUNCHER)
+
+                  pm.queryIntentActivities(
+                      intent,
+                      PackageManager.MATCH_ALL
+                  ).mapNotNull { info ->
+                      val pkg = info.activityInfo.packageName
+                      try {
+                          LaunchableApp(
+                              info.loadLabel(pm).toString(),
+                              pkg,
+                              drawableToBitmap(info.loadIcon(pm))
+                          )
+                      } catch (_: Exception) {
+                          null
+                      }
+                  }
+                  .distinctBy { it.packageName }
+                  .sortedBy { it.label.lowercase(Locale.getDefault()) }
+              }
+
+              allApps = loadedApps
+          }
+
+          """
+
+          source = source[:start] + replacement + source[end:]
+          path.write_text(source, encoding="utf-8")
+          print(f"Patched app loading in {path}")
+          PY
+
+      - name: Build debug APK
+        run: gradle -p build-source/GlasslineLauncher assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: GlasslineLauncher-debug-apk
-          path: GlasslineLauncher/app/build/outputs/apk/debug/app-debug.apk
+          name: GlasslineLauncher-fixed-debug-apk
+          path: build-source/GlasslineLauncher/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
