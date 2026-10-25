@@ -32,55 +32,66 @@ jobs:
         run: |
           unzip -oq "GlasslineLauncher-prototype (2).zip" -d build-source
 
-      - name: Patch app loading
+      - name: Optimize launcher source and animations
         shell: bash
         run: |
           python3 <<'PY'
           from pathlib import Path
 
-          path = Path(
-              "build-source/GlasslineLauncher/app/src/main/java/"
-              "com/glassline/launcher/MainActivity.kt"
-          )
+          root = Path("build-source/GlasslineLauncher")
+          path = root / "app/src/main/java/com/glassline/launcher/MainActivity.kt"
 
           if not path.exists():
-              matches = list(
-                  Path("build-source").rglob("MainActivity.kt")
-              )
+              matches = list(root.rglob("MainActivity.kt"))
               if len(matches) != 1:
                   raise SystemExit(
-                      f"Expected one MainActivity.kt; found {matches}"
+                      f"Expected one MainActivity.kt, found {matches}"
                   )
               path = matches[0]
 
           source = path.read_text(encoding="utf-8")
+
+          def replace_once(old, new, description):
+              global source
+              count = source.count(old)
+              if count != 1:
+                  raise SystemExit(
+                      f"Expected one match for {description}; found {count}. "
+                      "Build stopped rather than applying a partial patch."
+                  )
+              source = source.replace(old, new, 1)
+
+          replace_once(
+              "import android.content.Intent\n",
+              "import android.content.ComponentName\nimport android.content.Intent\n",
+              "Android component imports",
+          )
+
+          replace_once(
+              "import java.text.SimpleDateFormat\n",
+              "import kotlinx.coroutines.CancellationException\n"
+              "import kotlinx.coroutines.Dispatchers\n"
+              "import kotlinx.coroutines.withContext\n"
+              "import java.text.SimpleDateFormat\n",
+              "coroutine imports",
+          )
+
+          replace_once(
+              "data class LaunchableApp(val label: String, val packageName: String, val icon: Bitmap)",
+              "data class LaunchableApp(\n"
+              "    val label: String,\n"
+              "    val packageName: String,\n"
+              "    val activityName: String\n"
+              ")",
+              "lazy icon data model",
+          )
 
           start = source.find("    fun loadApps() {")
           marker = "    LaunchedEffect(Unit) { loadApps() }"
           end = source.find(marker, start)
 
           if start < 0 or end < 0:
-              raise SystemExit(
-                  "Patch stopped safely: expected loadApps() function "
-                  "or LaunchedEffect call was not found."
-              )
-
-          imports = (
-              "import kotlinx.coroutines.Dispatchers\n"
-              "import kotlinx.coroutines.withContext\n"
-          )
-
-          if "import kotlinx.coroutines.Dispatchers" not in source:
-              package_end = source.find("\n")
-              source = (
-                  source[:package_end + 1]
-                  + "\n"
-                  + imports
-                  + source[package_end + 1:]
-              )
-
-          start = source.find("    fun loadApps() {")
-          end = source.find(marker, start)
+              raise SystemExit("Could not safely locate app discovery code.")
 
           replacement = """    suspend fun loadApps() {
               val loadedApps = withContext(Dispatchers.IO) {
@@ -88,41 +99,104 @@ jobs:
                   val intent = Intent(Intent.ACTION_MAIN)
                       .addCategory(Intent.CATEGORY_LAUNCHER)
 
-                  pm.queryIntentActivities(
-                      intent,
-                      PackageManager.MATCH_ALL
-                  ).mapNotNull { info ->
-                      val pkg = info.activityInfo.packageName
-                      try {
-                          LaunchableApp(
-                              info.loadLabel(pm).toString(),
-                              pkg,
-                              drawableToBitmap(info.loadIcon(pm))
-                          )
-                      } catch (_: Exception) {
-                          null
+                  pm.queryIntentActivities(intent, 0)
+                      .mapNotNull { info ->
+                          val activity = info.activityInfo
+                              ?: return@mapNotNull null
+                          try {
+                              LaunchableApp(
+                                  label = info.loadLabel(pm).toString(),
+                                  packageName = activity.packageName,
+                                  activityName = activity.name
+                              )
+                          } catch (_: Exception) {
+                              null
+                          }
                       }
-                  }
-                  .distinctBy { it.packageName }
-                  .sortedBy { it.label.lowercase(Locale.getDefault()) }
+                      .distinctBy { it.packageName }
+                      .sortedBy {
+                          it.label.lowercase(Locale.getDefault())
+                      }
               }
-
               allApps = loadedApps
           }
-
           """
 
           source = source[:start] + replacement + source[end:]
+
+          old_gesture = """.pointerInput(drawerOpen, settingsOpen) {
+                  var drag = 0f
+                  detectVerticalDragGestures(onVerticalDrag = { _, amount -> drag += amount }, onDragEnd = {
+                      if (!drawerOpen && drag < -55f) drawerOpen = true
+                      if (drawerOpen && drag > 75f) { drawerOpen = false; query = "" }
+                      drag = 0f
+                  })
+              }"""
+
+          replace_once(old_gesture, "", "root swipe handler")
+
+          replace_once(
+              "import androidx.compose.animation.AnimatedContent\n"
+              "import androidx.compose.animation.core.FastOutSlowInEasing\n"
+              "import androidx.compose.animation.togetherWith\n"
+              "import androidx.compose.animation.core.tween\n",
+              "import androidx.compose.animation.AnimatedContent\n"
+              "import androidx.compose.animation.fadeIn\n"
+              "import androidx.compose.animation.fadeOut\n"
+              "import androidx.compose.animation.scaleIn\n"
+              "import androidx.compose.animation.slideInVertically\n"
+              "import androidx.compose.animation.slideOutVertically\n"
+              "import androidx.compose.animation.core.FastOutSlowInEasing\n"
+              "import androidx.compose.animation.core.tween\n"
+              "import androidx.compose.animation.togetherWith\n",
+              "animation imports",
+          )
+
+          replace_once(
+              "                transitionSpec = { androidx.compose.animation.fadeIn(tween(160, easing = FastOutSlowInEasing)) togetherWith androidx.compose.animation.fadeOut(tween(100)) },",
+              """                transitionSpec = {
+                    if (targetState) {
+                        (slideInVertically(
+                            animationSpec = tween(
+                                310,
+                                easing = FastOutSlowInEasing
+                            ),
+                            initialOffsetY = { height -> height }
+                        ) + fadeIn(tween(220)) + scaleIn(
+                            initialScale = 0.97f,
+                            animationSpec = tween(
+                                310,
+                                easing = FastOutSlowInEasing
+                            )
+                        )) togetherWith
+                            (slideOutVertically(
+                                animationSpec = tween(220),
+                                targetOffsetY = { height -> -height / 12 }
+                            ) + fadeOut(tween(150)))
+                    } else {
+                        (slideInVertically(
+                            animationSpec = tween(280),
+                            initialOffsetY = { height -> -height / 12 }
+                        ) + fadeIn(tween(220))) togetherWith
+                            (slideOutVertically(
+                                animationSpec = tween(240),
+                                targetOffsetY = { height -> height }
+                            ) + fadeOut(tween(180)))
+                    }
+                },""",
+              "screen transition",
+          )
+
           path.write_text(source, encoding="utf-8")
-          print(f"Patched app loading in {path}")
+          print("Applied app-discovery and transition changes.")
           PY
 
       - name: Build debug APK
         run: gradle -p build-source/GlasslineLauncher assembleDebug
 
-      - name: Upload APK
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: GlasslineLauncher-fixed-debug-apk
+          name: GlasslineLauncher-performance-debug-apk
           path: build-source/GlasslineLauncher/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
