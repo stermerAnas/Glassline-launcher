@@ -1,31 +1,46 @@
-<?xml version="1.0" encoding="utf-8"?>
+<escape><?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <queries>
-        <intent>
+
+<uses-feature
+    android:name="android.hardware.touchscreen"
+    android:required="false" />
+
+<uses-permission android:name="android.permission.VIBRATE" />
+
+<queries>
+    <intent>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+    </intent>
+</queries>
+
+<application
+    android:allowBackup="false"
+    android:label="Glassline"
+    android:theme="@android:style/Theme.Material.Light.NoActionBar"
+    android:hardwareAccelerated="true"
+    android:supportsRtl="true">
+
+    <activity
+        android:name=".LauncherActivity"
+        android:exported="true"
+        android:launchMode="singleTask"
+        android:screenOrientation="unspecified"
+        android:configChanges="orientation|screenSize|keyboardHidden"
+        android:windowSoftInputMode="adjustNothing">
+
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+            <category android:name="android.intent.category.DEFAULT" />
+        </intent-filter>
+
+        <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
-        </intent>
-    </queries>
-    <application
-        android:allowBackup="false"
-        android:label="Glassline"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:hardwareAccelerated="true"
-        android:supportsRtl="true">
-        <activity
-            android:name=".LauncherActivity"
-            android:exported="true"
-            android:launchMode="singleTask"
-            android:screenOrientation="unspecified"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:windowSoftInputMode="adjustNothing">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.HOME" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-    </application>
-</manifest>
+        </intent-filter>
+
+    </activity>
+</application>
+
+</manifest></escape>
