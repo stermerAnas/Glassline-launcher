@@ -1,15 +1,14 @@
-
 name: Build Glassline Launcher
 
 on:
   push:
     paths:
       - "GlasslineLauncher/**"
-      - ".github/workflows/Build-glassline.yml"
+      - ".github/workflows/build-apk.yml"
   pull_request:
     paths:
       - "GlasslineLauncher/**"
-      - ".github/workflows/Build-glassline.yml"
+      - ".github/workflows/build-apk.yml"
   workflow_dispatch:
 
 permissions:
