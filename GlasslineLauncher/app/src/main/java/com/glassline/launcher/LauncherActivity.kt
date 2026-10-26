@@ -1,3 +1,4 @@
+
 package com.glassline.launcher
 
 import android.app.Activity
@@ -11,7 +12,6 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -71,9 +71,13 @@ class LauncherActivity : Activity() {
         val clock = TextView(this).apply {
             text = "Glassline"
             textSize = 30f
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            typeface = Typeface.create(
+                "sans-serif-medium",
+                Typeface.NORMAL
+            )
             setTextColor(Color.WHITE)
         }
+
         root.addView(
             clock,
             LinearLayout.LayoutParams(
@@ -87,6 +91,7 @@ class LauncherActivity : Activity() {
             textSize = 14f
             setTextColor(Color.rgb(165, 168, 181))
         }
+
         root.addView(
             subtitle,
             LinearLayout.LayoutParams(
@@ -105,11 +110,9 @@ class LauncherActivity : Activity() {
             textSize = 14f
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
-            background = rounded(
-                Color.rgb(48, 50, 62),
-                18
-            )
+            background = rounded(Color.rgb(48, 50, 62), 18)
             setPadding(dp(16), dp(10), dp(16), dp(10))
+
             setOnClickListener {
                 runCatching {
                     startActivity(
@@ -133,11 +136,9 @@ class LauncherActivity : Activity() {
             textSize = 14f
             gravity = Gravity.CENTER
             setTextColor(Color.WHITE)
-            background = rounded(
-                Color.rgb(48, 50, 62),
-                18
-            )
+            background = rounded(Color.rgb(48, 50, 62), 18)
             setPadding(dp(16), dp(10), dp(16), dp(10))
+
             setOnClickListener {
                 loadApps()
             }
@@ -179,14 +180,11 @@ class LauncherActivity : Activity() {
         searchField = EditText(this).apply {
             hint = "Search apps"
             textSize = 16f
-            singleLine = true
+            setSingleLine(true)
             setTextColor(Color.WHITE)
             setHintTextColor(Color.rgb(155, 158, 172))
             setPadding(dp(16), dp(10), dp(16), dp(10))
-            background = rounded(
-                Color.rgb(38, 40, 49),
-                20
-            )
+            background = rounded(Color.rgb(38, 40, 49), 20)
         }
 
         root.addView(
@@ -225,7 +223,7 @@ class LauncherActivity : Activity() {
 
         scroll.addView(
             appGrid,
-            ScrollView.LayoutParams(
+            ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
@@ -402,7 +400,9 @@ class LauncherActivity : Activity() {
         }
 
     private fun selectableBackground(): android.graphics.drawable.Drawable {
-        val attributes = intArrayOf(android.R.attr.selectableItemBackground)
+        val attributes = intArrayOf(
+            android.R.attr.selectableItemBackground
+        )
         val array = obtainStyledAttributes(attributes)
         val drawable = array.getDrawable(0)
         array.recycle()
