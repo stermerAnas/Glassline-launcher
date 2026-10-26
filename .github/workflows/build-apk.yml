@@ -1,112 +1,74 @@
-name: Build Glassline Launcher APK
+
+name: Build Glassline Launcher
 
 on:
   push:
     paths:
       - "GlasslineLauncher/**"
-      - ".github/workflows/build-apk.yml"
+      - ".github/workflows/Build-glassline.yml"
   pull_request:
     paths:
       - "GlasslineLauncher/**"
-      - ".github/workflows/build-apk.yml"
+      - ".github/workflows/Build-glassline.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: glassline-build-${{ github.ref }}
+  group: glassline-android-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Test and Build Debug APK
+    name: Build debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    defaults:
-      run:
-        working-directory: GlasslineLauncher
-
     steps:
-      - name: Checkout repository
+      - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
-
-      - name: Install Android SDK components
-        run: |
-          sdkmanager --install \
-            "platform-tools" \
-            "platforms;android-36" \
-            "build-tools;36.0.0"
-
-      - name: Validate Gradle project
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ ! -f settings.gradle && ! -f settings.gradle.kts ]]; then
-            echo "::error::No settings.gradle or settings.gradle.kts found in GlasslineLauncher."
-            exit 1
-          fi
-
-          if [[ ! -f gradlew && ! -f gradle/wrapper/gradle-wrapper.properties ]]; then
-            echo "::notice::Gradle wrapper not found. The workflow will use installed Gradle."
-          fi
 
       - name: Set up Gradle
-        if: ${{ hashFiles('GlasslineLauncher/gradlew') == '' }}
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: "8.13"
+          gradle-version: "8.11.1"
 
-      - name: Make Gradle wrapper executable
-        if: ${{ hashFiles('GlasslineLauncher/gradlew') != '' }}
-        run: chmod +x gradlew
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Verify project files
+        shell: bash
+        run: |
+          test -f GlasslineLauncher/settings.gradle.kts
+          test -f GlasslineLauncher/build.gradle.kts
+          test -f GlasslineLauncher/app/build.gradle.kts
+          gradle --version
 
       - name: Run unit tests
-        shell: bash
-        run: |
-          set -euo pipefail
+        run: gradle -p GlasslineLauncher :app:testDebugUnitTest --stacktrace
 
-          if [[ -f ./gradlew ]]; then
-            ./gradlew --no-daemon testDebugUnitTest --stacktrace
-          else
-            gradle --no-daemon testDebugUnitTest --stacktrace
-          fi
-
-      - name: Build debug APK
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ -f ./gradlew ]]; then
-            ./gradlew --no-daemon assembleDebug --stacktrace
-          else
-            gradle --no-daemon assembleDebug --stacktrace
-          fi
+      - name: Assemble debug APK
+        run: gradle -p GlasslineLauncher :app:assembleDebug --stacktrace
 
       - name: Verify APK exists
         shell: bash
         run: |
-          set -euo pipefail
-
-          APK="app/build/outputs/apk/debug/app-debug.apk"
-
-          if [[ ! -s "$APK" ]]; then
-            echo "::error::Debug APK was not generated at $APK"
+          APK="GlasslineLauncher/app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -s "$APK" ]; then
+            echo "::error::Debug APK was not produced"
+            find GlasslineLauncher/app/build/outputs -maxdepth 5 -type f -print 2>/dev/null || true
             exit 1
           fi
-
           ls -lh "$APK"
 
       - name: Upload debug APK
@@ -116,15 +78,3 @@ jobs:
           path: GlasslineLauncher/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
-
-      - name: Upload test reports on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: glassline-build-diagnostics
-          path: |
-            GlasslineLauncher/**/build/reports/tests/
-            GlasslineLauncher/**/build/test-results/
-            GlasslineLauncher/**/build/outputs/logs/
-          if-no-files-found: ignore
-          retention-days: 7
