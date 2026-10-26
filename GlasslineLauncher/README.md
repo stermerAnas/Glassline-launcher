@@ -2,6 +2,8 @@
 
 Glassline is a privacy-first Android home launcher written in Kotlin. The continuously recycled app drawer and workspace use native Android Views, `RecyclerView`, `GridLayoutManager`, and `ViewPager2`; Material Components provides theme tokens and the draggable bottom sheet. Compose is intentionally not used on the high-frequency icon-grid path. No network permission or analytics SDK is included.
 
+The visual direction is **iOS-inspired, not an iOS clone**: an editorial clock/date header, calm pastel aurora wallpaper, spacious app icons, a frosted capsule dock, subtle press feedback, and a separately presented App Library. The dock uses icon-only favorites and remains editable. A dark aurora palette is supplied for system dark mode, and the original workspace, widgets, folders, shortcuts, drag/reorder, icon packs, and backup features remain part of the project.
+
 ## Build requirements
 
 - Android Studio with JDK 17
@@ -62,6 +64,7 @@ Install the debug APK and select Glassline in **Settings → Apps → Default ap
 ### Personalization and platform integration
 
 - Live grid columns, icon size, labels, six accent choices, day/night palettes, bundled Roboto fonts, edge-to-edge insets, and a wallpaper toggle.
+- Default light/dark aurora wallpaper is drawn locally with cached gradient shaders; it uses no downloaded assets or animation loop. A light glass dock, icon-only dock slots, larger hit areas, and restrained spring/touch feedback emphasize the iOS-like visual direction.
 - ADW/GO/Nova-style icon-pack discovery, `appfilter.xml` mappings, per-app overrides, bounded drawable cache, and system-icon fallback.
 - Static wallpaper chooser and live wallpaper chooser. Cached wallpaper is invalidated on `ACTION_WALLPAPER_CHANGED`; no blur is used.
 - Gestures: swipe up opens the drawer; swipe down closes the drawer; home swipe down can open search or request the notification shade. Horizontal motion is excluded from the vertical drawer gesture.

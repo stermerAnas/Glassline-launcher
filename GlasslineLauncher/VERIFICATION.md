@@ -43,6 +43,14 @@ Date: 2026-10-26. This report separates source inspection from execution. The cu
 - Baseline Profile: plugin and `baselineprofile` module configured. Generated profile collection NOT RUN; no generated profile is claimed.
 - Macrobenchmark: `benchmark/src/androidTest/java/com/glassline/launcher/benchmark/LauncherMacrobenchmark.kt` includes cold startup (`None`, `Full`), 200-app drawer scrolling, drawer opening, page swiping, and icon dragging. Module compilation/execution NOT RUN.
 
+
+## Premium iOS-inspired visual refresh (working source)
+
+- `AuroraWallpaperDrawable.kt` adds a custom offline light/dark gradient wallpaper. Linear and radial shaders are rebuilt when the drawable bounds change, rather than on every draw. No wallpaper asset download or animation loop was added.
+- `LauncherActivity.kt` uses a frosted, stroked dock capsule, 44 dp icon-only dock favorites, a separate grid-style App Library affordance, clearer date/clock hierarchy, a rounded settings control, and subtle scale/overshoot press feedback.
+- The App Library title/search control and both day/night palettes have been restyled to use calmer iOS-inspired spacing and colors. Workspace pages, drag/drop, folders, widgets, shortcuts, settings, and persistence are preserved in this source tree.
+- XML/source checks below describe this working source package. **An Android Gradle build and device run have not been performed here**, because this environment has no Gradle executable, Android SDK, or `adb`. Do not treat this refresh as a compiled or device-verified APK.
+
 ## Phase 8 execution contract
 
 | Check | Status | Reproduction command / manual step |
@@ -56,6 +64,13 @@ Date: 2026-10-26. This report separates source inspection from execution. The cu
 | 8.7 StrictMode | Policies configured; zero-violation status NOT RUN | `adb logcat -s StrictMode GlasslineStartup` while exercising launch/search/widgets/settings. |
 | 8.8 Light/dark, RTL, TalkBack, reduce motion, 200% font | Automated test source exists for light/dark; manual checks NOT RUN | On A34: toggle system theme; set Arabic; enable TalkBack; set Animator duration scale to 0; set font size to 200%. |
 | 8.9 Release APK and install | NOT RUN: no Gradle/SDK/adb in this environment | `gradle :app:assembleRelease`; install resulting `app-release.apk` on the Galaxy A34 and select it as Home app. |
+
+## Static checks executed for the premium visual refresh
+
+- XML parsing passed for all 13 resource/manifest XML files in the working source tree.
+- Source assertions passed for the workspace pager, separate drawer, drag/drop, widget host, persisted workspace, App Library title, icon-only dock, Aurora wallpaper fallback, and reduced-motion-aware press feedback.
+- `kotlinc` was run against the changed Kotlin files without an Android SDK/classpath; the output contains unresolved Android/AndroidX symbols as expected and no matches for Kotlin parser/syntax-error diagnostics. This does **not** constitute compilation.
+- Gradle unit tests, Android assembly, and Ramus/device smoke tests remain NOT RUN for this visual refresh.
 
 ## Static checks actually executed
 

@@ -1,20 +1,20 @@
 <resources>
-    <color name="glass_bg">#F5F6FA</color>
-    <color name="glass_surface">#E7EAF2</color>
-    <color name="glass_text">#171B25</color>
-    <color name="glass_muted">#5F687A</color>
-    <color name="glass_accent">#315A9D</color>
-    <color name="accent_blue">#4263EB</color>
-    <color name="accent_violet">#7C4DFF</color>
-    <color name="accent_teal">#00897B</color>
-    <color name="accent_rose">#D81B60</color>
-    <color name="accent_amber">#D97706</color>
-    <color name="accent_emerald">#2E7D32</color>
+    <color name="glass_bg">#F5F6FF</color>
+    <color name="glass_surface">#CFE0F6</color>
+    <color name="glass_text">#20243A</color>
+    <color name="glass_muted">#636D86</color>
+    <color name="glass_accent">#526DD5</color>
+    <color name="accent_blue">#526DD5</color>
+    <color name="accent_violet">#8B72E9</color>
+    <color name="accent_teal">#269D9A</color>
+    <color name="accent_rose">#D96791</color>
+    <color name="accent_amber">#D99B45</color>
+    <color name="accent_emerald">#299A76</color>
     <color name="accent_amber_on_primary">#1A1A1A</color>
-    <color name="glass_outline">#687386</color>
-    <color name="glass_outline_variant">#D0D5E0</color>
-    <color name="glass_primary_container">#DCE4FF</color>
-    <color name="glass_on_primary_container">#142B63</color>
-    <color name="glass_surface_container_low">#EEF0F6</color>
-    <color name="glass_surface_container_high">#DDE1EB</color>
+    <color name="glass_outline">#697594</color>
+    <color name="glass_outline_variant">#D0D7EC</color>
+    <color name="glass_primary_container">#DFE5FF</color>
+    <color name="glass_on_primary_container">#242E5B</color>
+    <color name="glass_surface_container_low">#F0F2FC</color>
+    <color name="glass_surface_container_high">#E1E6F7</color>
 </resources>
