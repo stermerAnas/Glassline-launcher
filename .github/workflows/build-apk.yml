@@ -1,8 +1,11 @@
-
 name: Build Glassline Launcher APK
 
 on:
   push:
+    paths:
+      - "GlasslineLauncher/**"
+      - ".github/workflows/build-apk.yml"
+  pull_request:
     paths:
       - "GlasslineLauncher/**"
       - ".github/workflows/build-apk.yml"
@@ -11,11 +14,19 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: glassline-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: Build Debug APK
+    name: Test and Build Debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: GlasslineLauncher
 
     steps:
       - name: Checkout repository
@@ -26,6 +37,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
@@ -37,14 +49,65 @@ jobs:
             "platforms;android-36" \
             "build-tools;36.0.0"
 
+      - name: Validate Gradle project
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! -f settings.gradle && ! -f settings.gradle.kts ]]; then
+            echo "::error::No settings.gradle or settings.gradle.kts found in GlasslineLauncher."
+            exit 1
+          fi
+
+          if [[ ! -f gradlew && ! -f gradle/wrapper/gradle-wrapper.properties ]]; then
+            echo "::notice::Gradle wrapper not found. The workflow will use installed Gradle."
+          fi
+
       - name: Set up Gradle
+        if: ${{ hashFiles('GlasslineLauncher/gradlew') == '' }}
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.13"
 
+      - name: Make Gradle wrapper executable
+        if: ${{ hashFiles('GlasslineLauncher/gradlew') != '' }}
+        run: chmod +x gradlew
+
+      - name: Run unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -f ./gradlew ]]; then
+            ./gradlew --no-daemon testDebugUnitTest --stacktrace
+          else
+            gradle --no-daemon testDebugUnitTest --stacktrace
+          fi
+
       - name: Build debug APK
-        working-directory: GlasslineLauncher
-        run: gradle --no-daemon assembleDebug --stacktrace
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -f ./gradlew ]]; then
+            ./gradlew --no-daemon assembleDebug --stacktrace
+          else
+            gradle --no-daemon assembleDebug --stacktrace
+          fi
+
+      - name: Verify APK exists
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+
+          if [[ ! -s "$APK" ]]; then
+            echo "::error::Debug APK was not generated at $APK"
+            exit 1
+          fi
+
+          ls -lh "$APK"
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
@@ -53,3 +116,15 @@ jobs:
           path: GlasslineLauncher/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload test reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: glassline-build-diagnostics
+          path: |
+            GlasslineLauncher/**/build/reports/tests/
+            GlasslineLauncher/**/build/test-results/
+            GlasslineLauncher/**/build/outputs/logs/
+          if-no-files-found: ignore
+          retention-days: 7
