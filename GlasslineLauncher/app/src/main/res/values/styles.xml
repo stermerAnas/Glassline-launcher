@@ -1,0 +1,29 @@
+<resources>
+    <style name="Theme.Glassline" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:fontFamily">@font/glassline</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="colorPrimary">@color/accent_blue</item>
+        <item name="colorOnPrimary">@color/glass_bg</item>
+        <item name="colorSecondary">@color/accent_blue</item>
+        <item name="colorSurface">@color/glass_bg</item>
+        <item name="colorOnSurface">@color/glass_text</item>
+        <item name="colorOnSurfaceVariant">@color/glass_muted</item>
+        <item name="colorOutline">@color/glass_outline</item>
+        <item name="colorOutlineVariant">@color/glass_outline_variant</item>
+        <item name="colorPrimaryContainer">@color/glass_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/glass_on_primary_container</item>
+        <item name="colorSurfaceContainerLow">@color/glass_surface_container_low</item>
+        <item name="colorSurfaceContainerHigh">@color/glass_surface_container_high</item>
+    </style>
+
+    <style name="Theme.Glassline.AccentBlue" parent="Theme.Glassline"><item name="colorPrimary">@color/accent_blue</item><item name="colorSecondary">@color/accent_blue</item></style>
+    <style name="Theme.Glassline.AccentViolet" parent="Theme.Glassline"><item name="colorPrimary">@color/accent_violet</item><item name="colorSecondary">@color/accent_violet</item></style>
+    <style name="Theme.Glassline.AccentTeal" parent="Theme.Glassline"><item name="colorPrimary">@color/accent_teal</item><item name="colorSecondary">@color/accent_teal</item></style>
+    <style name="Theme.Glassline.AccentRose" parent="Theme.Glassline"><item name="colorPrimary">@color/accent_rose</item><item name="colorSecondary">@color/accent_rose</item></style>
+    <style name="Theme.Glassline.AccentAmber" parent="Theme.Glassline"><item name="colorPrimary">@color/accent_amber</item><item name="colorSecondary">@color/accent_amber</item><item name="colorOnPrimary">@color/accent_amber_on_primary</item></style>
+    <style name="Theme.Glassline.AccentEmerald" parent="Theme.Glassline"><item name="colorPrimary">@color/accent_emerald</item><item name="colorSecondary">@color/accent_emerald</item></style>
+</resources>

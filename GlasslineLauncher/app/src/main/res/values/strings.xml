@@ -1,0 +1,2 @@
+<resources><string name="app_name">Glassline</string>    <string name="accessibility_service_description">Allows an optional swipe gesture to open the notification shade. Glassline does not read screen content.</string>
+</resources>

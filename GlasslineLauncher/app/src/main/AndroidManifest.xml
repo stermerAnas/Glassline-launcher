@@ -1,31 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
-    <uses-permission android:name="android.permission.VIBRATE" />
     <queries>
-        <intent>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent>
+        <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
+        <intent><action android:name="com.glassline.launcher.action.ICON_PACK"/></intent>
+        <intent><action android:name="org.adw.launcher.THEMES"/></intent>
+        <intent><action android:name="com.gradle.theme.ICONS"/></intent>
+        <intent><action android:name="com.novalauncher.THEME"/></intent>
+        <intent><action android:name="com.gau.go.launcherex.theme"/></intent>
     </queries>
-    <application
-        android:allowBackup="false"
-        android:label="Glassline"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:hardwareAccelerated="true"
-        android:supportsRtl="true">
-        <activity
-            android:name=".LauncherActivity"
-            android:exported="true"
-            android:launchMode="singleTask"
-            android:screenOrientation="unspecified"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:windowSoftInputMode="adjustNothing">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.HOME" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
+    <application android:name=".GlasslineApplication" android:enableOnBackInvokedCallback="true" android:allowBackup="false" android:label="Glassline" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:supportsRtl="true" android:theme="@style/Theme.Glassline" android:usesCleartextTraffic="false">
+        <activity android:name=".SettingsActivity" android:exported="false" />
+        <service android:name=".GlasslineAccessibilityService" android:exported="true" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:label="Glassline notification gesture">
+            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility_service_config"/>
+        </service>
+        <receiver android:name=".WidgetPinReceiver" android:exported="false" />
+        <receiver android:name=".GlasslineDeviceAdminReceiver" android:exported="true" android:permission="android.permission.BIND_DEVICE_ADMIN" android:label="Glassline device lock">
+            <meta-data android:name="android.app.device_admin" android:resource="@xml/device_admin"/>
+            <intent-filter><action android:name="android.app.action.DEVICE_ADMIN_ENABLED"/></intent-filter>
+        </receiver>
+        <activity android:name=".LauncherActivity" android:exported="true" android:screenOrientation="unspecified" android:configChanges="keyboard|keyboardHidden|orientation|screenSize">
+            <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.HOME"/><category android:name="android.intent.category.DEFAULT"/></intent-filter>
         </activity>
     </application>
 </manifest>
