@@ -1,31 +1,24 @@
-name: Build Glassline Launcher APK
 
-name: Build Glassline Launcher
+name: Build Glassline Launcher APK
 
 on:
   push:
     paths:
       - "GlasslineLauncher/**"
-      - "GlasslineLauncher-premium-rebuild/GlasslineLauncher/**"
-      - ".github/workflows/Build-glassline.yml"
-      - ".github/workflows/build-glassline.yml"
+      - ".github/workflows/build-apk.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
-concurrency:
-  group: glassline-build-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build:
-    name: Build debug APK
+    name: Build Debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Check out repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -37,76 +30,26 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
-      - name: Install required Android SDK components
+      - name: Install Android SDK components
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager \
+          sdkmanager --install \
             "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
-
-      - name: Locate launcher project
-        id: project
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          candidates=(
-            "GlasslineLauncher-premium-rebuild/GlasslineLauncher"
-            "GlasslineLauncher"
-            "."
-          )
-
-          PROJECT_DIR=""
-
-          for candidate in "${candidates[@]}"; do
-            if [[ -f "$candidate/settings.gradle.kts" &&
-                  -f "$candidate/app/build.gradle.kts" ]]; then
-              PROJECT_DIR="$candidate"
-              break
-            fi
-          done
-
-          if [[ -z "$PROJECT_DIR" ]]; then
-            echo "::error::Could not find the Gradle project."
-            echo "Expected settings.gradle.kts and app/build.gradle.kts."
-            echo "Repository root contents:"
-            ls -la
-            exit 1
-          fi
-
-          echo "Project directory: $PROJECT_DIR"
-          echo "dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+            "platforms;android-36" \
+            "build-tools;36.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.13"
 
-      - name: Verify project files
-        shell: bash
-        env:
-          PROJECT_DIR: ${{ steps.project.outputs.dir }}
-        run: |
-          set -euo pipefail
-          test -f "$PROJECT_DIR/build.gradle.kts"
-          test -f "$PROJECT_DIR/app/src/main/AndroidManifest.xml"
-          echo "Gradle project structure verified."
-
-      - name: Assemble debug APK
-        env:
-          PROJECT_DIR: ${{ steps.project.outputs.dir }}
-        run: |
-          gradle \
-            -p "$PROJECT_DIR" \
-            :app:assembleDebug \
-            --no-daemon \
-            --stacktrace
+      - name: Build debug APK
+        working-directory: GlasslineLauncher
+        run: gradle --no-daemon assembleDebug --stacktrace
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: GlasslineLauncher-debug-apk
-          path: ${{ steps.project.outputs.dir }}/app/build/outputs/apk/debug/app-debug.apk
+          name: glassline-debug-apk
+          path: GlasslineLauncher/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
