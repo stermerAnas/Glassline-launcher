@@ -27,7 +27,7 @@ class LauncherActivity : Activity() {
         val activityName: String,
         val label: String,
         val userSerial: Long = 0L,
-        val resolveInfo: ResolveInfo
+        val resolveInfo: ResolveInfo? = null
     )
 
     private lateinit var root: LinearLayout
@@ -329,7 +329,7 @@ class LauncherActivity : Activity() {
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 setImageDrawable(
                     runCatching {
-                        app.resolveInfo.loadIcon(packageManager)
+                        app.resolveInfo?.loadIcon(packageManager)
                     }.getOrNull()
                 )
                 contentDescription = app.label
@@ -393,11 +393,13 @@ class LauncherActivity : Activity() {
         }
     }
 
-    private fun rounded(color: Int, radiusDp: Int) =
-        GradientDrawable().apply {
-            setColor(color)
-            cornerRadius = dp(radiusDp).toFloat()
-        }
+    private fun rounded(
+        color: Int,
+        radiusDp: Int
+    ) = GradientDrawable().apply {
+        setColor(color)
+        cornerRadius = dp(radiusDp).toFloat()
+    }
 
     private fun selectableBackground(): android.graphics.drawable.Drawable {
         val attributes = intArrayOf(
